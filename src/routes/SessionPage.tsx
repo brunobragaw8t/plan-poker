@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  Pencil,
 } from "lucide-react";
 import { VotingCard } from "@/components/VotingCard";
 import { ParticipantAvatar } from "@/components/ParticipantAvatar";
@@ -71,6 +72,10 @@ export function SessionPage() {
   const [newStoryDesc, setNewStoryDesc] = useState("");
   const [newStoryLink, setNewStoryLink] = useState("");
   const [addStoryOpen, setAddStoryOpen] = useState(false);
+  const [editStoryOpen, setEditStoryOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editLink, setEditLink] = useState("");
   const [copied, setCopied] = useState(false);
   const [needsName, setNeedsName] = useState(false);
   const [guestName, setGuestName] = useState("");
@@ -166,6 +171,25 @@ export function SessionPage() {
 
   const handleSetEstimate = (storyId: Id<"stories">, value: string) => {
     updateStory({ storyId, finalEstimate: value });
+  };
+
+  const openEditStory = () => {
+    if (!currentStory) return;
+    setEditTitle(currentStory.title);
+    setEditDesc(currentStory.description ?? "");
+    setEditLink(currentStory.issueLink ?? "");
+    setEditStoryOpen(true);
+  };
+
+  const handleEditStory = async () => {
+    if (!currentStory || !editTitle.trim()) return;
+    await updateStory({
+      storyId: currentStory._id,
+      title: editTitle.trim(),
+      description: editDesc.trim() || undefined,
+      issueLink: editLink.trim() || undefined,
+    });
+    setEditStoryOpen(false);
   };
 
   const isCreator = identity?.oddsId === session?.creatorId;
@@ -565,6 +589,15 @@ export function SessionPage() {
                     </div>
                     {isCreator && (
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={openEditStory}
+                          className="gap-1.5 border-border/50 text-muted-foreground hover:text-foreground"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Edit
+                        </Button>
                         {!session.isRevealed ? (
                           <Button
                             size="sm"
@@ -593,6 +626,61 @@ export function SessionPage() {
                         )}
                       </div>
                     )}
+
+                    {/* Edit Story Dialog */}
+                    <Dialog open={editStoryOpen} onOpenChange={setEditStoryOpen}>
+                      <DialogContent className="bg-card border-border/50 sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Edit Story</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-2">
+                          <div className="space-y-2">
+                            <Label className="text-sm text-muted-foreground">
+                              Title
+                            </Label>
+                            <Input
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleEditStory()
+                              }
+                              autoFocus
+                              className="bg-input/50"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm text-muted-foreground">
+                              Issue Link (optional)
+                            </Label>
+                            <Input
+                              value={editLink}
+                              onChange={(e) => setEditLink(e.target.value)}
+                              placeholder="https://jira.example.com/browse/PROJ-123"
+                              className="bg-input/50"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm text-muted-foreground">
+                              Description (optional)
+                            </Label>
+                            <Textarea
+                              value={editDesc}
+                              onChange={(e) => setEditDesc(e.target.value)}
+                              placeholder="Add any details..."
+                              className="bg-input/50 resize-none"
+                              rows={3}
+                            />
+                          </div>
+                          <Button
+                            onClick={handleEditStory}
+                            disabled={!editTitle.trim()}
+                            className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-brand-blue-dark font-semibold"
+                          >
+                            Save Changes
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
 
                   {/* Vote status */}
