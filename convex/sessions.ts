@@ -81,9 +81,16 @@ export const setCurrentStory = mutation({
     storyId: v.optional(v.id("stories")),
   },
   handler: async (ctx, args) => {
+    let isRevealed = false;
+    if (args.storyId) {
+      const story = await ctx.db.get(args.storyId);
+      if (story?.finalEstimate) {
+        isRevealed = true;
+      }
+    }
     await ctx.db.patch(args.sessionId, {
       currentStoryId: args.storyId,
-      isRevealed: false,
+      isRevealed,
     });
   },
 });
