@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# PlanPoker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Real-time planning poker for agile teams. Create a session, share the link, and estimate stories together.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Session creation** with a unique shareable URL
+- **Guest access** — participants join by entering a name, no sign-up required
+- **Configurable card sets** — Fibonacci, Modified Fibonacci, T-Shirt sizes, Powers of 2, Sequential
+- **Real-time voting** powered by Convex — votes update instantly across all participants
+- **Reveal & reset flow** — host reveals votes, reviews results, sets a final estimate
+- **Issue links** — attach a Jira/GitHub/etc. link to each story so voters can review context
+- **Editable stories** — host can update story details without resetting votes
+- **Live presence** — see who's online, who has voted, and the vote count
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS v4 + Shadcn/ui
+- Convex (real-time database)
+- TanStack Router
+- Framer Motion
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 18+
+- A [Convex](https://convex.dev) account
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Initialize and link your Convex project (interactive — will create `.env.local`):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npx convex dev
 ```
+
+In a separate terminal, start the frontend:
+
+```bash
+npm run dev:frontend
+```
+
+### Scripts
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Sync Convex schema once, then start Vite |
+| `npm run dev:convex` | Start Convex dev server (watches for schema/function changes) |
+| `npm run dev:frontend` | Start Vite dev server only |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+
+## Project Structure
+
+```
+├── convex/              # Backend
+│   ├── schema.ts        # Database schema (sessions, stories, participants, votes)
+│   ├── sessions.ts      # Session mutations & queries
+│   ├── stories.ts       # Story CRUD
+│   ├── participants.ts  # Join, heartbeat, leave
+│   └── votes.ts         # Cast & retract votes
+└── src/                 # Frontend
+    ├── routes/
+    │   ├── HomePage.tsx      # Create a new session
+    │   ├── JoinPage.tsx      # Guest name entry
+    │   └── SessionPage.tsx   # Main voting interface
+    ├── components/
+    │   ├── VotingCard.tsx         # Animated card button
+    │   ├── ParticipantAvatar.tsx  # Participant row with vote status
+    │   └── VoteResultsBar.tsx     # Results breakdown after reveal
+    └── lib/
+        ├── cardSets.ts    # Card set presets
+        └── identity.ts    # Local identity (localStorage + nanoid)
+```
+
+## How It Works
+
+1. **Host** creates a session, picks a card set, and optionally participates in voting.
+2. **Participants** join via the invite link, entering only a name.
+3. The host adds stories (with optional description and issue link) and selects one to estimate.
+4. Everyone picks a card. Votes are hidden until the host clicks **Reveal**.
+5. After reveal, the host sets a **final estimate** and moves to the next story.
