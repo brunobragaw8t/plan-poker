@@ -17,6 +17,7 @@ export default defineSchema({
     sessionId: v.id("sessions"),
     title: v.string(),
     description: v.optional(v.string()),
+    issueLink: v.optional(v.string()),
     finalEstimate: v.optional(v.string()),
     order: v.number(),
   }).index("by_session", ["sessionId"]),

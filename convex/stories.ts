@@ -16,6 +16,7 @@ export const add = mutation({
     sessionId: v.id("sessions"),
     title: v.string(),
     description: v.optional(v.string()),
+    issueLink: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -27,6 +28,7 @@ export const add = mutation({
       sessionId: args.sessionId,
       title: args.title,
       description: args.description,
+      issueLink: args.issueLink,
       order: existing.length,
     });
 
@@ -44,12 +46,14 @@ export const update = mutation({
     storyId: v.id("stories"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    issueLink: v.optional(v.string()),
     finalEstimate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const patch: Record<string, unknown> = {};
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
+    if (args.issueLink !== undefined) patch.issueLink = args.issueLink;
     if (args.finalEstimate !== undefined)
       patch.finalEstimate = args.finalEstimate;
     await ctx.db.patch(args.storyId, patch);

@@ -32,6 +32,7 @@ import {
   Link2,
   CheckCircle2,
   Clock,
+  ExternalLink,
 } from "lucide-react";
 import { VotingCard } from "@/components/VotingCard";
 import { ParticipantAvatar } from "@/components/ParticipantAvatar";
@@ -68,6 +69,7 @@ export function SessionPage() {
   const [identity, setIdentityState] = useState(getIdentity);
   const [newStoryTitle, setNewStoryTitle] = useState("");
   const [newStoryDesc, setNewStoryDesc] = useState("");
+  const [newStoryLink, setNewStoryLink] = useState("");
   const [addStoryOpen, setAddStoryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [needsName, setNeedsName] = useState(false);
@@ -127,9 +129,11 @@ export function SessionPage() {
       sessionId: session._id,
       title: newStoryTitle.trim(),
       description: newStoryDesc.trim() || undefined,
+      issueLink: newStoryLink.trim() || undefined,
     });
     setNewStoryTitle("");
     setNewStoryDesc("");
+    setNewStoryLink("");
     setAddStoryOpen(false);
   };
 
@@ -368,6 +372,17 @@ export function SessionPage() {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-sm text-muted-foreground">
+                          Issue Link (optional)
+                        </Label>
+                        <Input
+                          value={newStoryLink}
+                          onChange={(e) => setNewStoryLink(e.target.value)}
+                          placeholder="e.g. https://jira.example.com/browse/PROJ-123"
+                          className="bg-input/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">
                           Description (optional)
                         </Label>
                         <Textarea
@@ -526,9 +541,22 @@ export function SessionPage() {
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
                         Now estimating
                       </p>
-                      <h2 className="text-xl font-semibold text-foreground">
-                        {currentStory.title}
-                      </h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-semibold text-foreground">
+                          {currentStory.title}
+                        </h2>
+                        {currentStory.issueLink && (
+                          <a
+                            href={currentStory.issueLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-brand-blue-light/20 border border-brand-blue-light/30 text-blue-300 hover:bg-brand-blue-light/30 hover:text-blue-200 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Issue
+                          </a>
+                        )}
+                      </div>
                       {currentStory.description && (
                         <p className="text-sm text-muted-foreground mt-2 max-w-xl">
                           {currentStory.description}
