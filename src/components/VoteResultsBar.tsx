@@ -149,11 +149,36 @@ export function VoteResultsBar({
         })}
       </div>
 
-      {/* Set estimate hint */}
-      {onSetEstimate && !currentEstimate && (
-        <p className="text-xs text-muted-foreground/60 mt-3 text-center">
-          Click a card to set the final estimate
-        </p>
+      {/* All card options for host to pick from */}
+      {onSetEstimate && (
+        <div className="mt-4 pt-4 border-t border-border/20">
+          <p className="text-xs text-muted-foreground/60 mb-2">
+            {currentEstimate
+              ? "Change final estimate"
+              : "Select final estimate"}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {cardSet.map((value) => {
+              const wasVoted = sortedValues.includes(value);
+              const isSelected = currentEstimate === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => onSetEstimate(value)}
+                  className={`w-9 h-11 rounded-md border-2 flex items-center justify-center font-mono text-xs font-bold transition-all ${
+                    isSelected
+                      ? "bg-green-500/20 border-green-500/50 text-green-400"
+                      : wasVoted
+                        ? "bg-card/60 border-border/40 text-foreground/80 hover:border-brand-yellow/30"
+                        : "bg-card/30 border-border/20 text-muted-foreground hover:border-brand-yellow/30 hover:text-foreground/80"
+                  }`}
+                >
+                  {isSelected ? <Check className="w-3.5 h-3.5" /> : value}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
     </motion.div>
   );
