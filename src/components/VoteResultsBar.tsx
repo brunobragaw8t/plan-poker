@@ -62,6 +62,13 @@ export function VoteResultsBar({
   // Check consensus
   const isConsensus = sortedValues.length === 1;
 
+  // Find min and max votes (only if more than one unique value)
+  const minValue = sortedValues.length > 1 ? sortedValues[0] : null;
+  const maxValue =
+    sortedValues.length > 1 ? sortedValues[sortedValues.length - 1] : null;
+  const minVoters = minValue ? grouped[minValue] : [];
+  const maxVoters = maxValue ? grouped[maxValue] : [];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, height: 0 }}
@@ -84,14 +91,38 @@ export function VoteResultsBar({
             </motion.span>
           )}
         </div>
-        {average && (
-          <span className="text-sm text-muted-foreground">
-            Average:{" "}
-            <span className="text-brand-yellow font-mono font-semibold">
-              {average}
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          {minValue && maxValue && (
+            <>
+              <span>
+                Low:{" "}
+                <span className="text-blue-400 font-mono font-semibold">
+                  {minValue}
+                </span>
+                <span className="text-muted-foreground/60 ml-1">
+                  ({minVoters.join(", ")})
+                </span>
+              </span>
+              <span>
+                High:{" "}
+                <span className="text-orange-400 font-mono font-semibold">
+                  {maxValue}
+                </span>
+                <span className="text-muted-foreground/60 ml-1">
+                  ({maxVoters.join(", ")})
+                </span>
+              </span>
+            </>
+          )}
+          {average && (
+            <span>
+              Avg:{" "}
+              <span className="text-brand-yellow font-mono font-semibold">
+                {average}
+              </span>
             </span>
-          </span>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
