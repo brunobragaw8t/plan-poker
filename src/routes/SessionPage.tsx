@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -82,10 +82,14 @@ export function SessionPage() {
   const [needsConfirm, setNeedsConfirm] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const hasJoined = useRef(false);
 
   // Determine join state: needs name, needs confirmation, or auto-enter
   useEffect(() => {
     if (!session) return;
+
+    // Already joined this render cycle -> skip
+    if (hasJoined.current) return;
 
     // No identity -> prompt for name
     if (!identity) {
@@ -100,6 +104,7 @@ export function SessionPage() {
 
     // Already in this session -> go straight in
     if (isCreator || isAlreadyParticipant) {
+      hasJoined.current = true;
       setNeedsConfirm(false);
       setNeedsName(false);
       return;
@@ -136,6 +141,7 @@ export function SessionPage() {
       oddsId: newIdentity.oddsId,
       name: newIdentity.name,
     });
+    hasJoined.current = true;
     setNeedsName(false);
     setIsJoining(false);
   }, [guestName, session, joinSession]);
@@ -150,6 +156,7 @@ export function SessionPage() {
       oddsId: identity.oddsId,
       name: identity.name,
     });
+    hasJoined.current = true;
     setNeedsConfirm(false);
     setIsJoining(false);
   }, [identity, session, joinSession]);
