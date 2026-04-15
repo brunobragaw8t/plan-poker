@@ -18,10 +18,12 @@ export const join = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    // Check if participant already exists
+    // Check if participant already exists in this session
     const existing = await ctx.db
       .query("participants")
-      .withIndex("by_odds_id", (q) => q.eq("oddsId", args.oddsId))
+      .withIndex("by_session_and_odds_id", (q) =>
+        q.eq("sessionId", args.sessionId).eq("oddsId", args.oddsId),
+      )
       .first();
 
     if (existing) {
@@ -45,11 +47,13 @@ export const join = mutation({
 });
 
 export const heartbeat = mutation({
-  args: { oddsId: v.string() },
+  args: { sessionId: v.id("sessions"), oddsId: v.string() },
   handler: async (ctx, args) => {
     const participant = await ctx.db
       .query("participants")
-      .withIndex("by_odds_id", (q) => q.eq("oddsId", args.oddsId))
+      .withIndex("by_session_and_odds_id", (q) =>
+        q.eq("sessionId", args.sessionId).eq("oddsId", args.oddsId),
+      )
       .first();
 
     if (participant) {
@@ -62,11 +66,13 @@ export const heartbeat = mutation({
 });
 
 export const leave = mutation({
-  args: { oddsId: v.string() },
+  args: { sessionId: v.id("sessions"), oddsId: v.string() },
   handler: async (ctx, args) => {
     const participant = await ctx.db
       .query("participants")
-      .withIndex("by_odds_id", (q) => q.eq("oddsId", args.oddsId))
+      .withIndex("by_session_and_odds_id", (q) =>
+        q.eq("sessionId", args.sessionId).eq("oddsId", args.oddsId),
+      )
       .first();
 
     if (participant) {

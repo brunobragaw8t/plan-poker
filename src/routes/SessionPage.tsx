@@ -101,12 +101,12 @@ export function SessionPage() {
 
   // Heartbeat
   useEffect(() => {
-    if (!identity) return;
+    if (!identity || !session) return;
     const interval = setInterval(() => {
-      heartbeat({ oddsId: identity.oddsId });
+      heartbeat({ sessionId: session._id, oddsId: identity.oddsId });
     }, 15000);
     return () => clearInterval(interval);
-  }, [identity, heartbeat]);
+  }, [identity, session, heartbeat]);
 
   // Handle no identity
   useEffect(() => {

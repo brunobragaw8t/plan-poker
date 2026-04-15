@@ -30,7 +30,8 @@ export default defineSchema({
     lastSeen: v.number(),
   })
     .index("by_session", ["sessionId"])
-    .index("by_odds_id", ["oddsId"]),
+    .index("by_odds_id", ["oddsId"])
+    .index("by_session_and_odds_id", ["sessionId", "oddsId"]),
 
   votes: defineTable({
     storyId: v.id("stories"),
