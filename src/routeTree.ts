@@ -2,7 +2,6 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { RootLayout } from "./routes/RootLayout";
 import { HomePage } from "./routes/HomePage";
 import { SessionPage } from "./routes/SessionPage";
-import { JoinPage } from "./routes/JoinPage";
 
 const rootRoute = createRootRoute({
   component: RootLayout,
@@ -20,13 +19,7 @@ const sessionRoute = createRoute({
   component: SessionPage,
 });
 
-const joinRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/join/$slug",
-  component: JoinPage,
-});
-
-const routeTree = rootRoute.addChildren([homeRoute, sessionRoute, joinRoute]);
+const routeTree = rootRoute.addChildren([homeRoute, sessionRoute]);
 
 export const router = createRouter({ routeTree });
 

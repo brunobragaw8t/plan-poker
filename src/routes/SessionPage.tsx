@@ -34,6 +34,7 @@ import {
   Clock,
   ExternalLink,
   Pencil,
+  UserPlus,
 } from "lucide-react";
 import { VotingCard } from "@/components/VotingCard";
 import { ParticipantAvatar } from "@/components/ParticipantAvatar";
@@ -78,55 +79,80 @@ export function SessionPage() {
   const [editLink, setEditLink] = useState("");
   const [copied, setCopied] = useState(false);
   const [needsName, setNeedsName] = useState(false);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
-  // Check identity and join session
+  // Determine join state: needs name, needs confirmation, or auto-enter
   useEffect(() => {
-    if (!session || !identity) return;
+    if (!session) return;
+
+    // No identity -> prompt for name
+    if (!identity) {
+      setNeedsName(true);
+      return;
+    }
 
     const isCreator = identity.oddsId === session.creatorId;
     const isAlreadyParticipant = participants?.some(
       (p) => p.oddsId === identity.oddsId
     );
 
-    if (!isCreator && !isAlreadyParticipant) {
-      // Auto-join if we have a name
-      joinSession({
-        sessionId: session._id,
-        oddsId: identity.oddsId,
-        name: identity.name,
-      });
+    // Already in this session -> go straight in
+    if (isCreator || isAlreadyParticipant) {
+      setNeedsConfirm(false);
+      setNeedsName(false);
+      return;
     }
-  }, [session, identity, participants, joinSession]);
 
-  // Heartbeat
+    // Has identity but not in session -> ask to confirm
+    setNeedsConfirm(true);
+  }, [session, identity, participants]);
+
+  // Heartbeat - only when fully joined
   useEffect(() => {
-    if (!identity || !session) return;
+    if (!identity || !session || needsName || needsConfirm) return;
+    const isCreator = identity.oddsId === session.creatorId;
+    const isParticipant = participants?.some(
+      (p) => p.oddsId === identity.oddsId
+    );
+    if (!isCreator && !isParticipant) return;
+
     const interval = setInterval(() => {
       heartbeat({ sessionId: session._id, oddsId: identity.oddsId });
     }, 15000);
     return () => clearInterval(interval);
-  }, [identity, session, heartbeat]);
+  }, [identity, session, participants, needsName, needsConfirm, heartbeat]);
 
-  // Handle no identity
-  useEffect(() => {
-    if (!identity) {
-      setNeedsName(true);
-    }
-  }, [identity]);
-
+  // Scenario 1: New user joins with name
   const handleGuestJoin = useCallback(async () => {
     if (!guestName.trim() || !session) return;
+    setIsJoining(true);
     const newIdentity = setIdentity(guestName.trim());
     setIdentityState(newIdentity);
-    setNeedsName(false);
 
     await joinSession({
       sessionId: session._id,
       oddsId: newIdentity.oddsId,
       name: newIdentity.name,
     });
+    setNeedsName(false);
+    setIsJoining(false);
   }, [guestName, session, joinSession]);
+
+  // Scenario 2: Existing user confirms join
+  const handleConfirmJoin = useCallback(async () => {
+    if (!identity || !session) return;
+    setIsJoining(true);
+
+    await joinSession({
+      sessionId: session._id,
+      oddsId: identity.oddsId,
+      name: identity.name,
+    });
+    setNeedsConfirm(false);
+    setIsJoining(false);
+  }, [identity, session, joinSession]);
 
   const handleAddStory = async () => {
     if (!newStoryTitle.trim() || !session) return;
@@ -143,7 +169,7 @@ export function SessionPage() {
   };
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/join/${slug}`;
+    const url = `${window.location.origin}/session/${slug}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -240,47 +266,132 @@ export function SessionPage() {
     );
   }
 
-  // Guest name entry overlay
+  // Scenario 1: No identity — prompt for name + join in one step
   if (needsName) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-sm"
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
         >
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 mb-2">
-              <Layers className="w-6 h-6 text-brand-yellow" />
-              <span className="text-2xl font-bold">
-                <span className="text-brand-yellow">Plan</span>Poker
-              </span>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-yellow to-brand-yellow-dim flex items-center justify-center shadow-lg shadow-brand-yellow/20">
+                <Layers className="w-5 h-5 text-brand-blue-dark" />
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                <span className="text-brand-yellow">Plan</span>
+                <span className="text-foreground">Poker</span>
+              </h1>
             </div>
-            <p className="text-muted-foreground text-sm">
-              Joining: <span className="text-foreground">{session.name}</span>
-            </p>
           </div>
-          <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl p-6 space-y-4 shadow-2xl">
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">
-                Enter your name to join
-              </Label>
-              <Input
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGuestJoin()}
-                placeholder="Your name..."
-                autoFocus
-                className="bg-input/50"
-              />
+          <div className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl shadow-brand-blue/10 rounded-xl overflow-hidden">
+            <div className="pb-4 pt-6 px-6 text-center">
+              <h2 className="text-lg font-semibold">
+                Join{" "}
+                <span className="text-brand-yellow">{session.name}</span>
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Hosted by {session.creatorName}
+              </p>
             </div>
-            <Button
-              onClick={handleGuestJoin}
-              disabled={!guestName.trim()}
-              className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-brand-blue-dark font-semibold"
-            >
-              Join
-            </Button>
+            <div className="px-6 pb-6 space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="guest-name" className="text-sm text-muted-foreground">
+                  Your Name
+                </Label>
+                <Input
+                  id="guest-name"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGuestJoin()}
+                  placeholder="Enter your name..."
+                  autoFocus
+                  className="bg-input/50 border-border/50 focus:border-brand-yellow/50 transition-colors"
+                />
+              </div>
+              <Button
+                onClick={handleGuestJoin}
+                disabled={!guestName.trim() || isJoining}
+                className="w-full bg-brand-yellow hover:bg-brand-yellow/90 text-brand-blue-dark font-semibold h-11 text-sm transition-all duration-200 hover:shadow-lg hover:shadow-brand-yellow/20 disabled:opacity-40"
+              >
+                {isJoining ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join Session
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Scenario 2: Has identity but not in session — confirm join
+  if (needsConfirm) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-yellow to-brand-yellow-dim flex items-center justify-center shadow-lg shadow-brand-yellow/20">
+                <Layers className="w-5 h-5 text-brand-blue-dark" />
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                <span className="text-brand-yellow">Plan</span>
+                <span className="text-foreground">Poker</span>
+              </h1>
+            </div>
+          </div>
+          <div className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl shadow-brand-blue/10 rounded-xl overflow-hidden">
+            <div className="pb-4 pt-6 px-6 text-center">
+              <h2 className="text-lg font-semibold">
+                Join{" "}
+                <span className="text-brand-yellow">{session.name}</span>
+                ?
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Hosted by {session.creatorName}
+              </p>
+              <p className="text-sm text-muted-foreground mt-3">
+                You'll join as{" "}
+                <span className="text-foreground font-medium">{identity?.name}</span>
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate({ to: "/" })}
+                className="flex-1 border-border/50 hover:bg-muted/50"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmJoin}
+                disabled={isJoining}
+                className="flex-1 bg-brand-yellow hover:bg-brand-yellow/90 text-brand-blue-dark font-semibold h-11 text-sm transition-all duration-200 hover:shadow-lg hover:shadow-brand-yellow/20 disabled:opacity-40"
+              >
+                {isJoining ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </motion.div>
       </div>
